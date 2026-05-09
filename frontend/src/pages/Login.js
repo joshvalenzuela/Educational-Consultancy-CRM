@@ -100,10 +100,12 @@ function Login({ setUser, setToken }) {
   };
 
   return (
-    <Container className="mt-5">
-      <Card className="mx-auto" style={{ maxWidth: "500px" }}>
+    <Container className="mt-5 hide-navbar-padding">
+      <Card className="mx-auto auth-card">
         <Card.Body>
-          <Card.Title className="text-center mb-4">🔐 Login</Card.Title>
+          <Card.Title className="text-center mb-4 auth-title">
+            🔐 Login
+          </Card.Title>
           {error && <Alert variant="danger">{error}</Alert>}
 
           <Tabs

@@ -19,6 +19,7 @@ function StudentApplications({ token, userId }) {
     program_name: "",
     notes: "",
   });
+  const [schoolSearch, setSchoolSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,8 +39,17 @@ function StudentApplications({ token, userId }) {
 
   const fetchSchools = async () => {
     try {
-      const data = await api.getAllSchools(token);
-      setSchools(data);
+      // Students should use the public schools endpoint (no admin token required)
+      const data = await api.getPublicSchools();
+      // Normalize response: server might return { schools: [...] } or an array
+      if (Array.isArray(data)) {
+        setSchools(data);
+      } else if (data && Array.isArray(data.schools)) {
+        setSchools(data.schools);
+      } else {
+        console.error("Unexpected schools response:", data);
+        setSchools([]);
+      }
     } catch (err) {
       console.error("Error fetching schools:", err);
     }
@@ -82,19 +92,66 @@ function StudentApplications({ token, userId }) {
             <Form onSubmit={handleSubmit}>
               <Form.Group className="mb-3">
                 <Form.Label>School</Form.Label>
-                <Form.Select
-                  name="school_id"
-                  value={formData.school_id}
-                  onChange={handleInputChange}
+                <Form.Control
+                  type="text"
+                  placeholder="Search for a school..."
+                  value={schoolSearch}
+                  onChange={(e) => setSchoolSearch(e.target.value)}
+                  className="mb-2"
                   required
-                >
-                  <option value="">Select a School</option>
-                  {schools.map((school) => (
-                    <option key={school.id} value={school.id}>
-                      {school.name}
-                    </option>
-                  ))}
-                </Form.Select>
+                />
+                {schoolSearch && (
+                  <div
+                    className="border rounded p-2"
+                    style={{
+                      maxHeight: "200px",
+                      overflowY: "auto",
+                      zIndex: 50,
+                      background: "#fff",
+                    }}
+                  >
+                    {schools
+                      .filter((school) =>
+                        school.name
+                          .toLowerCase()
+                          .includes(schoolSearch.toLowerCase()),
+                      )
+                      .map((school) => (
+                        <div
+                          key={school.id}
+                          className="p-2 border-bottom"
+                          style={{ cursor: "pointer" }}
+                          onClick={() => {
+                            setFormData({ ...formData, school_id: school.id });
+                            setSchoolSearch(school.name);
+                          }}
+                        >
+                          <strong>{school.name}</strong>
+                          <br />
+                          <small className="text-muted">
+                            {school.location}
+                          </small>
+                        </div>
+                      ))}
+                    {schools.filter((school) =>
+                      school.name
+                        .toLowerCase()
+                        .includes(schoolSearch.toLowerCase()),
+                    ).length === 0 && (
+                      <div className="p-2 text-muted">No schools found</div>
+                    )}
+                  </div>
+                )}
+                {formData.school_id && (
+                  <div className="mt-2">
+                    <small className="text-success">
+                      ✓ Selected:{" "}
+                      {schools.find(
+                        (s) => s.id === parseInt(formData.school_id),
+                      )?.name || ""}
+                    </small>
+                  </div>
+                )}
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>Program Name</Form.Label>
